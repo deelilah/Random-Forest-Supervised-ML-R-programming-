@@ -1,0 +1,421 @@
+---
+  output:
+  html_document: default
+pdf_document: default
+---
+  ---
+  #Define the Question
+  Enterprenuer with an online Crypocurrency course wants to advertise her course on the blog.Find out which audience is likely to click the link.
+We are going to implement supervised learning models in order to see how accurate our model can  help identify which individuals are most likely to click on the ads in the blog. 
+
+#Context
+The enterprenuer wants to get the target audience who will click on his /her advertisment for the crypocurrency course she wants to put on the blog.
+
+#Experimental design
+Define the question
+find arnomalies and outliers
+Perform univariate and bivariate analysis
+Create supervised models to help identify which individuals are likely to click on the ads.
+
+#Challenge the solution and provide insights.
+Use Supervised machine learning algorithm to identify indiviguals of age,gender and other features
+
+#metric of success
+Use Supervised machine learning algorithm to identify indiviguals of age,gender and other features and get an accuracy of 90%
+
+```{r}
+#Library installation
+
+install.packages("dplyr")
+library(dplyr) # data manipulation
+
+```
+
+
+```{r}
+#Load the dataset we are working on
+
+ads <- read.csv("advertising.csv")
+ads
+```
+
+```{r}
+#checking the first six rows
+head(ads)
+```
+
+```{r}
+#checking the datatypes
+str(ads)
+```
+```{r}
+#checking for number of columns and rows
+colnames(ads)
+```
+
+```{r}
+#summary of dataframe
+summary(ads)
+```
+
+```{r}
+#check the shape of the dataset
+dim(ads)
+```
+```{r}
+#cleaning the Data now
+is.na(ads)
+colSums(is.na(ads))
+
+#in our dataset there are  no missing values
+
+```
+
+```{r}
+#check for duplicated values
+duplicated(ads)
+#no duplicated values
+```
+```{r}
+#date time column separated
+ads$Date <- sapply(strsplit(as.character(ads$Timestamp), " "), "[", 1)
+ads$Time<- sapply(strsplit(as.character(ads$Timestamp), " "), "[", 2)
+
+```
+
+```{r}
+head(ads)
+```
+
+```{r}
+#here we change the male column to gender where 1 is male and 0 female
+names(ads)[names(ads) == "Male"] <- "Gender"
+names
+```
+
+```{r}
+head(ads)
+```
+
+```{r}
+#convert Gender and  Clicked.on.Ad TO factor
+list=c("Gender","Clicked.on.Ad")
+for (f in list){
+  ads[,f]=as.factor(ads[,f])
+}
+
+```
+
+```{r}
+#checking for outliers
+install.packages('colorspace')
+install.packages("ggplot2")
+library(ggplot2)
+install.packages('Rmisc', dependencies = TRUE)
+library(Rmisc)
+
+```
+
+
+```{r}
+#age and gender have no outlierss
+boxplot(Age~Gender,data=ads)
+```
+
+```{r}
+#no outliers in Daily.Time.Spent.on.Site
+boxplot(Daily.Time.Spent.on.Site~Gender,data=ads)
+```
+
+```{r}
+#area of income contains outliers
+boxplot(Area.Income~Gender,data=ads)
+
+```
+
+```{r}
+#daily internet usage has no outliers
+boxplot(Daily.Internet.Usage~Gender,data=ads)
+```
+
+
+```{r}
+#remove the outliers on Area Income
+#ads[!ads %in% boxplot.stats(ads)$out]
+```
+```{r}
+install.packages("ggpubr")
+```
+```{r}
+library("ggpubr")
+```
+
+
+```{r}
+#check for correlation between Male and Daily.Time.Spent.on.Site
+#res <- cor.test(ads$Gender, ads$Daily.Time.Spent.on.Site, 
+#method = "pearson")
+#res
+```
+
+```{r}
+#res <- cor.test(ads$Gender, ads$Area.Income, 
+#method = "pearson")
+#res
+
+```
+
+```{r}
+#geneeral check for correlation in heatmap
+library("ggpubr")
+```
+```{r}
+library(RColorBrewer)
+install.packages("corrplot")
+library(corrplot)
+#Subsetting the numerical variables to check correlations.
+#
+num_cols = subset(ads, select = c("Daily.Time.Spent.on.Site", "Age", "Area.Income", "Daily.Internet.Usage"))
+num_cols
+
+cor(num_cols)
+# Plotting a heatmap for the correlations.
+heatmap(cor(num_cols))
+# pairplots to check correlation of variables.
+#
+pairs(num_cols)
+```
+```
+
+```{r}
+#univariate Analysis
+hist(ads$Age, 
+     main="Histogram for Age", 
+     xlab="Age", 
+     border="black", 
+     col="green")
+#In this plot we can see that individuals of age 30 to 40 are more in this study compared to the other ages(mostly 35)
+```
+```{r}
+hist(ads$Daily.Time.Spent.on.Site, 
+     main="Histogram for Time spent on site", 
+     xlab="Time spent on site", 
+     border="green", 
+     col="gold")
+#most people spend 80 min of their time on the site
+```
+```{r}
+hist(ads$Daily.Internet.Usage, 
+     main="Histogram for Internet Usage", 
+     xlab="Daily.Internet.Usage", 
+     border="red", 
+     col="purple")
+#most people use around 130 to 140 internet bundles on the site
+```
+
+```{r}
+
+hist(ads$Area.Income, 
+     main="Histogram for Area Income", 
+     xlab="Area Income", 
+     border="orange", 
+     col="maroon")
+#in the area per income we can see most poeple earn 68441.85 
+```
+
+```{r}
+#bivariate analysis
+plot(ads$Daily.Internet.Usage,ads$Daily.Time.Spent.on.Site,
+     main="Linearly correlated",
+     xlab="x",ylab="y")
+```
+```{r}
+#BIVARIATE ANALYSIS
+# Analysis to see who clicked more on the ads.
+#
+df= ggplot(data = ads, aes(x = Clicked.on.Ad, fill = Gender))+
+  geom_bar(width = 0.5)
+df
+#A bit more males clicked on the ads compared to the women.
+```
+```{r}
+df1= ggplot(data = ads, aes(x = Area.Income, fill = Clicked.on.Ad))+
+  geom_histogram(bins = 25)
+df1
+# people in the Lower income areas clicked on the Ads more.
+```
+```{r}
+df2= ggplot(data = ads, aes(x =Daily.Time.Spent.on.Site , fill = Clicked.on.Ad))+
+  geom_histogram(bins = 25)
+df2
+#THe most time spent on the site when the add was clicked is about 80 minutes which is a lot.This means maybe the individual had time to read and was interested in the course.
+```
+```{r}
+
+df3= ggplot(data = ads, aes(x = Daily.Internet.Usage , fill = Clicked.on.Ad))+
+  geom_histogram(bins = 25)
+df3
+
+#the average bundles people used on the site was 125 to 130 bundles.
+
+```{r}
+normalize <- function(x){
+  return ((x-min(x))/(max(x)-min(x)))
+}
+
+data<- as.data.frame(lapply(ads[,c(1,2,3,4)],normalize))
+head(data)
+```
+# Normalize the dataset between values 0,1 for we do not want our algorithm to be affected by the magnitude of these variables.
+
+
+
+```
+###MODELLING 
+```{r}
+head(ads)
+```
+```{r}
+#pick numerical and columns in use during modelling
+#data=c('Daily.Time.Spent.on.Site','Age','Area.Income','Daily.Internet.Usage','Gender','Clicked.On.Ad')
+dim(ads)
+```
+#Split data into train and test
+```{r}
+#set.seed(200)
+#rnorm(200)
+
+#train_index <- sample(1:nrow(ads), 0.8 * nrow(ads))
+#test_index <- setdiff(1:nrow(ads), train_index)
+
+
+
+# Build X_train, y_train, X_test, y_test
+#X_train <- ads[train_index, -6]
+#y_train <- ads[train_index, "Clicked.On.Ad"]
+
+#X_test <- ads[test_index, -6]
+#y_test <- ads[test_index, "Clicked.On.Ad"]
+
+#X=X_train
+#y=y_train$Clicked.On.Ad
+
+```
+```{r}
+#creates a value for dividing the data into train and test. In this case the value is defined as 80% of the number of rows in the dataset
+smp_siz  # shows the value of the sample size
+install.packages("ISLR", repos="http://cran.us.r-project.org")
+library('ISLR')
+attach(ads)
+
+smp_siz = floor(0.8*nrow(ads))
+smp_siz
+```
+```{r}
+#set seed to ensure you always have same random numbers generated
+
+set.seed(150)
+
+#Randomly identifies the rows equal to sample size ( defined in previous instruction) from  all the rows of ads dataset and stores the row number in train_ind
+```
+
+```{r}
+random <- runif(150)
+ads_random <- ads[order(random),]
+```
+```{r}
+head(ads_random)
+```
+```{r}
+# Normalizing the numerical variables of the data set. Normalizing the numerical values is really effective for algorithms, 
+# as it provides a measure from 0 to 1 which corresponds to min value to the max value of the data column.
+# We define a normal function which will normalize the set of values according to its minimum value and maximum value.
+normal <- function(x) (
+  return( ((x - min(x)) /(max(x)-min(x))) )
+)
+```
+```{r}
+normal(1:5)
+ads_new <- as.data.frame(lapply(ads_random[,-5], normal))
+
+
+```
+```{r}
+train <- ads_new[1:130,]
+test <- ads_new[131:150,]
+train_sp <- ads_random[1:130,5]
+test_sp <- ads_random[131:150,5]
+
+```
+
+library(rpart)
+
+#Random forest
+```{r}
+m <- rpart(Class ~ ., data =ads,
+           method = "class")
+
+rpart.plot(m)
+
+
+
+
+
+
+```{r}
+# Setting the seed to 100, for reproducibility
+set.seed(100)
+
+# Selecting only columns that are relevant to modeling
+mod_cols = c('Daily.Time.Spent.on.Site', 'Age', 'Area.Income', 'Daily.Internet.Usage','Clicked.on.Ad')
+ads = select(ads, mod_cols)
+
+# Splitting the data into 80% training and 20% testing
+install.packages("caret")
+library(caret)
+train_rows = createDataPartition(ads$Clicked.on.Ad, p=0.8, list=FALSE)
+
+# Creating the training  dataset
+train = ads[train_rows,]
+
+# Creating the test dataset
+test = ads[-train_rows,]
+
+# Creating the  X and Y variables
+x = train
+y = train$Clicked_on_Ad
+```
+
+```{r}
+
+# Training the model
+model = train(Clicked.on.Ad ~ ., data = train, method = 'earth')
+
+# Making predictions using the training set
+pred = predict(model)
+pred
+model
+```
+```{r}
+# Plotting the model to show various iterations of the hyperparameters 
+plot(model, main = 'Model accuracies', xlab = 'Model accuracy')
+
+```
+```{r}
+# Checking which features were important in predicting the target variable
+important_features = varImp(model)
+
+# Plotting feature importance
+plot(important_features, main = 'Feature importance')
+```
+#RANDOM FOREST
+
+```{r}
+set.seed(100)
+
+# Train the model using rf
+library(caret)
+model_forest = train(Clicked.on.Ad ~ ., data=train, method='rf', tuneLength=5)
+model_forest
+```
+
